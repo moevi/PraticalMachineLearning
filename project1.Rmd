@@ -1,0 +1,118 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Kpakpo Moevi"
+date: "August 18, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r}
+Thedownloader1 <- function(url, nastrings) {
+        temp <- tempfile()
+        download.file(url, temp, method = "curl")
+        data <- read.csv(temp, na.strings = nastrings)
+        unlink(temp)
+        return(data)
+}
+
+```
+```{r }
+url_Train<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+ 
+ url_Test<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+```
+```{r}
+training<-Thedownloader1(url_Train ,c("NA","#DIV/0!",""))
+testing<-Thedownloader1(url_Test ,c("NA","#DIV/0!",""))
+```
+
+```{r}
+
+library(caret)
+
+
+```
+```{r}
+training<-training[,colSums(is.na(training))==0]
+testing<-testing[,colSums(is.na(testing))==0]
+```
+
+```{r}
+testing<-testing[,-c(1:7)]
+training<-training[,-c(1:7)]
+```
+
+```
+Need to partition the training data for cross validation
+
+```{r}
+inTrain<-createDataPartition(training$classe,p=0.75, list=FALSE)
+subTraining<-training[inTrain,]
+subTesting<-training[-inTrain,]
+dim(subTraining)
+dim(subTesting)
+
+
+```
+```{r pressure, echo=FALSE}
+table(subTraining$classe)
+```
+```{r}
+
+```
+```{r}
+plot(subTraining$classe)
+```
+
+# Prediction Model using the Decision Tree.
+```{r}
+library(rpart)
+
+```
+```{r}
+DTmodel <- rpart(classe ~ ., data=subTraining, method="class")
+
+```
+```{r}
+DTpred<-predict(DTmodel,subTesting,type ="class")
+
+```
+
+```{r}
+library(rpart.plot)
+
+
+```
+```{r}
+rpart.plot(DTmodel,main="Classification Tree",extra=102,under = TRUE,faclen=0)
+```
+```{r}
+confusionMatrix(DTpred,subTesting$classe)
+```
+#prediction using Random Forest.
+```{r}
+library(randomForest)
+```
+```{r}
+RFmodel<-randomForest(classe ~. ,data = subTraining,method="class")
+
+```
+```{r}
+RFprediction<-predict(RFmodel,subTesting,type = "class")
+```
+```{r}
+confusionMatrix(RFprediction,subTesting$classe)
+```
+The accuracy is 99%in Random Forest compared to 70% in the Decision Tree.So the prediction using the Random Forest is retained.
+```{r}
+finalPred<-predict(RFmodel,testing,type="class")
+finalPred
+
